@@ -1,0 +1,189 @@
+{% assign submission_url = "https://spray-tied-click-fs.trycloudflare.com" %}
+<link rel="stylesheet" href="{{ 'styles.css' | asset_url }}">
+
+<div id="contact-form-app-block" class="contact-form-container">
+  <div class="contact-form-header">
+    <h2>{{ block.settings.heading }}</h2>
+  </div>
+
+  <div id="form-response" class="response-message" style="display: none;">
+    <p></p>
+  </div>
+
+
+  <form id="contact-form" method="POST" action='{{ submission_url }}/api/submit-form'>
+    <div class="form-field">
+      <label for="name">Name <span class="required">*</span></label>
+      <input 
+        type="text" 
+        id="name" 
+        name="name" 
+        required 
+        autocomplete="name"
+        aria-required="true"
+      >
+      <div class="error-message" id="name-error"></div>
+    </div>
+
+    <div class="form-field">
+      <label for="email">Email <span class="required">*</span></label>
+      <input 
+        type="email" 
+        id="email" 
+        name="email" 
+        required 
+        autocomplete="email"
+        aria-required="true"
+      >
+      <div class="error-message" id="email-error"></div>
+    </div>
+
+    <div class="form-field">
+      <label for="phoneNumber">Phone Number <span class="required">*</span></label>
+      <input 
+        type="tel" 
+        id="phoneNumber" 
+        name="phoneNumber" 
+        required 
+        autocomplete="tel"
+        aria-required="true"
+      >
+      <div class="error-message" id="phoneNumber-error"></div>
+    </div>
+
+    <div class="form-actions">
+      <button 
+        type="submit" 
+        id="submit-button" 
+      >
+        {{ block.settings.button_label }}
+      </button>
+    </div>
+  </form>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('contact-form');
+    const nameInput = document.getElementById('name');
+    const emailInput = document.getElementById('email');
+    const phoneInput = document.getElementById('phoneNumber');
+    const nameError = document.getElementById('name-error');
+    const emailError = document.getElementById('email-error');
+    const phoneError = document.getElementById('phoneNumber-error');
+    const responseContainer = document.getElementById('form-response');
+    const submitButton = document.getElementById('submit-button');
+
+    function validateName() {
+      if (nameInput.value.trim() === '') {
+        nameError.textContent = 'Name is required';
+        return false;
+      }
+      nameError.textContent = '';
+      return true;
+    }
+
+    function validateEmail() {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(emailInput.value)) {
+        emailError.textContent = 'Please enter a valid email address';
+        return false;
+      }
+      emailError.textContent = '';
+      return true;
+    }
+
+    function validatePhone() {
+      const phoneRegex = /^[+]?[(]?[0-9]{3}[)]?[-\s.]?[0-9]{3}[-\s.]?[0-9]{4,6}$/;
+      if (!phoneRegex.test(phoneInput.value)) {
+        phoneError.textContent = 'Please enter a valid phone number';
+        return false;
+      }
+      phoneError.textContent = '';
+      return true;
+    }
+
+    nameInput.addEventListener('blur', validateName);
+    emailInput.addEventListener('blur', validateEmail);
+    phoneInput.addEventListener('blur', validatePhone);
+
+    // Handle form submission
+    form.addEventListener('submit', function(event) {
+      event.preventDefault();
+      
+      // Validate all fields
+      const isNameValid = validateName();
+      const isEmailValid = validateEmail();
+      const isPhoneValid = validatePhone();
+      
+      if (isNameValid && isEmailValid && isPhoneValid) {
+        // Disable submit button to prevent multiple submissions
+        submitButton.disabled = true;
+        submitButton.textContent = 'Submitting...';
+        
+        const formData = {
+          name: nameInput.value,
+          email: emailInput.value,
+          phoneNumber: phoneInput.value
+        };
+        
+        // Send form data to backend
+        fetch(form.action, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(formData)
+        })
+        .then(response => response.json())
+        .then(data => {
+          // Show success message
+          responseContainer.style.display = 'block';
+          responseContainer.classList.add('success');
+          responseContainer.classList.remove('error');
+          responseContainer.querySelector('p').textContent = 'Thank you! Your submission has been received.';
+          
+          form.reset();
+          
+          submitButton.disabled = false;
+          submitButton.textContent = '{{ block.settings.submit_button }}';
+        })
+        .catch(error => {
+          // Show error message
+          responseContainer.style.display = 'block';
+          responseContainer.classList.add('error');
+          responseContainer.classList.remove('success');
+          responseContainer.querySelector('p').textContent = 'An error occurred. Please try again later.';
+          
+          // Re-enable submit button
+          submitButton.disabled = false;
+          submitButton.textContent = '{{ block.settings.submit_button }}';
+          
+          console.error('Form submission error:', error);
+        });
+      }
+    });
+  });
+</script>
+
+{% schema %}
+{
+  "name": "Submission Form",
+  "target": "section",
+  "settings": [
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "Contact Form"
+    },
+    {
+      "type": "text",
+      "id": "button_label",
+      "label": "button label",
+      "default": "Submit"
+    },
+  ]
+}
+{% endschema %}
+
